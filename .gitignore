@@ -1,0 +1,67 @@
+# --- macOS ---
+.DS_Store
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyo
+*.pyd
+*.pyd.*
+*.so
+.venv/
+env/
+venv/
+ENV/
+pip-wheel-metadata/
+*.egg-info/
+.eggs/
+dist/
+build/
+*.egg
+.python-version
+.pytest_cache/
+.mypy_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.ruff_cache/
+.pyre/
+.ipynb_checkpoints/
+
+# --- Editors/IDE ---
+.vscode/
+.idea/
+
+# --- Env / secrets ---
+.env
+.env.*
+*.secret
+*.key
+
+# --- Logs/temp ---
+*.log
+logs/
+tmp/
+cache/
+*.tmp
+
+# --- Project outputs (downloads/artifacts) ---
+downloads/
+examples/*.webm
+examples/*.mkv
+examples/*.mp4
+examples/*.m4a
+examples/*.flac
+examples/*.opus
+examples/*.mp3
+examples/*.srt
+examples/*.vtt
+examples/*.info.json
+examples/*.jpg
+examples/*.png
+yt-dlp-archive.txt
+
+# --- Wheels/build artifacts ---
+*.whl

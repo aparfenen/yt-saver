@@ -1,0 +1,53 @@
+# Global defaults (safe & stable)
+save_dir: "./downloads"
+
+# Filename: date always, time if present, short safe title
+outtmpl: "%(upload_date>%Y-%m-%d)s%(release_timestamp>_%H-%M-%S|)s - %(autonumber)02d - %(title).100s.%(ext)s"
+
+# Common network/robustness
+network:
+  retries: 10
+  fragment_retries: 10
+  retry_sleep: "http:exp=1:30,fragment:exp=1:20"
+  concurrent_fragment_downloads: 3
+  socket_timeout: 30
+  skip_unavailable_fragments: true
+  sleep_requests: 0.75
+  sleep_subtitles: 5
+  max_sleep_interval: 20
+
+# Common behavior
+behavior:
+  noplaylist: true
+  continuedl: true
+  overwrites: false
+  windowsfilenames: true
+  check_formats: true
+  no_warnings: true
+  ignoreerrors: true
+  no_abort_on_error: true
+  download_archive: "yt-dlp-archive.txt"
+
+# Subtitles/metadata
+media:
+  writeinfojson: true
+  writethumbnail: true
+  embedthumbnail: true      # may remux WEBM -> MKV
+  addmetadata: true
+  embedsubtitles: true
+  writesubtitles: false
+  writeautomaticsub: true
+  subtitleslangs: ["en.*", "ru.*"]
+  subtitlesformat: "vtt/srt"
+
+# Profiles tweak format/container
+profiles:
+  webm:
+    format: "bv*[ext=webm]+ba[ext=webm]/bv*+ba/best"
+    merge_output_format: "webm"
+    remuxvideo: "webm"
+  mp4:
+    # prefer h264/aac for max compatibility
+    format: "bv*[vcodec*=avc1]+ba[acodec*=mp4a]/bv*+ba/best"
+    merge_output_format: "mp4"
+    remuxvideo: "mp4"
