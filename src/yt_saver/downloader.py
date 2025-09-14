@@ -1,6 +1,7 @@
 from __future__ import annotations
 from typing import Iterable, Tuple, Dict, Any
 from yt_dlp import YoutubeDL
+from yt_dlp.utils import YoutubeDLError
 import os
 
 
@@ -13,6 +14,33 @@ def _pjoin(*parts: str) -> str:
     if not cleaned:
         return ""
     return os.path.join(*cleaned).replace("\\", "/")
+
+
+def _try_make_ydl(opts: Dict[str, Any]) -> YoutubeDL:
+    """
+    Create YoutubeDL with graceful fallback:
+    - if impersonate target is unavailable -> drop 'impersonate'
+    - if cookies load fails -> drop 'cookiesfrombrowser'/'cookies'
+    """
+    try:
+        return YoutubeDL(opts)
+    except YoutubeDLError as e:
+        msg = str(e).lower()
+        clean = dict(opts)
+        changed = False
+
+        if "impersonate" in msg:
+            clean.pop("impersonate", None)
+            changed = True
+
+        if "cookie" in msg:
+            clean.pop("cookiesfrombrowser", None)
+            clean.pop("cookies", None)
+            changed = True
+
+        if changed:
+            return YoutubeDL(clean)
+        raise
 
 
 def download_batch(
@@ -52,7 +80,7 @@ def download_batch(
         "verbose": False,
     })
 
-    with YoutubeDL(probe_opts) as ydl_probe:
+    with _try_make_ydl(probe_opts) as ydl_probe:
         for idx, url in videos:
             # Copy base opts for the actual download
             opts = dict(base_opts)
@@ -84,6 +112,6 @@ def download_batch(
             # Compose final outtmpl (directories + file template)
             opts["outtmpl"] = _pjoin(root, item_filename)
 
-            # Execute download with the per-item template
-            with YoutubeDL(opts) as ydl:
+            # Execute download (with graceful fallback on impersonate/cookies)
+            with _try_make_ydl(opts) as ydl:
                 ydl.download([url])

@@ -27,7 +27,7 @@ class Config:
         Note: per-item/per-playlist subdirs are applied in downloader.py.
         """
         d = self.raw
-        prof = (d.get("profiles", {}) or {}).get(profile, {})
+        prof = (d.get("profiles", {}) or {}).get(profile, {}) or {}
 
         opts: Dict[str, Any] = {}
 
@@ -39,13 +39,8 @@ class Config:
         # Filename template (the *file* part; subdir templates are added later)
         outtmpl = outtmpl_override or d.get("outtmpl")
         if outtmpl:
+            # Only store the file template; downloader composes full path
             opts["outtmpl"] = os.path.join(base_dir, outtmpl)
-
-        # Profile-level container/format preferences
-        for k in ("format", "merge_output_format", "remuxvideo"):
-            v = prof.get(k)
-            if v is not None:
-                opts[k] = v
 
         # Behavior flags (archive path is relative to base_dir)
         for k, v in (d.get("behavior") or {}).items():
@@ -57,9 +52,27 @@ class Config:
         for k, v in (d.get("network") or {}).items():
             opts[k] = v
 
-        # Media options (subtitles/thumbnail/metadata)
+        # Media options (base)
         for k, v in (d.get("media") or {}).items():
             opts[k] = v
+
+        # Profile-level overrides:
+        # 1) container/format preferences
+        for k in ("format", "merge_output_format", "remuxvideo"):
+            v = prof.get(k)
+            if v is not None:
+                opts[k] = v
+
+        # 2) media-related options that profiles may set/override
+        media_keys = (
+            "writesubtitles", "writeautomaticsub", "embedsubtitles",
+            "subtitleslangs", "subtitlesformat", "convertsubtitles",
+            "writethumbnail", "embedthumbnail", "addmetadata", "writeinfojson",
+            "postprocessors",
+        )
+        for k in media_keys:
+            if k in prof:
+                opts[k] = prof[k]
 
         # Advanced
         adv = d.get("advanced") or {}
@@ -77,6 +90,7 @@ class Config:
             "per_item": s.get("per_item", "%(title).80s [%(id)s]"),
             "per_playlist": s.get("per_playlist", "%(playlist_title).80s [%(playlist_id)s]"),
         }
+
 
 def _deep_merge(a: Dict[str, Any], b: Dict[str, Any]) -> Dict[str, Any]:
     """

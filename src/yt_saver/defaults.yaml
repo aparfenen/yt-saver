@@ -1,10 +1,10 @@
 # Global defaults (safe & stable)
 save_dir: "./downloads"
 
-# Sortable, compact filenames: date + optional time + index + short safe title
+# Filename: date always, time if present, short safe title
 outtmpl: "%(upload_date>%Y-%m-%d)s%(release_timestamp>_%H-%M-%S|)s - %(autonumber)02d - %(title).100s.%(ext)s"
 
-# Network / robustness
+# Common network/robustness
 network:
   retries: 10
   fragment_retries: 10
@@ -12,12 +12,11 @@ network:
   concurrent_fragment_downloads: 3
   socket_timeout: 30
   skip_unavailable_fragments: true
-  sleep_requests: 0.75
+  sleep_requests: 1.2
   max_sleep_interval: 20
 
-# Behavior
+# Common behavior
 behavior:
-  # NOTE: We override this to False automatically when a playlist is detected
   noplaylist: true
   continuedl: true
   overwrites: false
@@ -28,40 +27,63 @@ behavior:
   no_abort_on_error: true
   download_archive: "yt-dlp-archive.txt"
 
-# Subtitles / metadata
+# Subtitles / metadata (base defaults; profiles may override)
 media:
   writeinfojson: true
-  writethumbnail: true
-  embedthumbnail: true        # NOTE: WebM may remux to MKV to hold cover art
+  writethumbnail: false        # base: off (profiles may turn on)
+  embedthumbnail: false        # base: off (profiles may turn on)
   addmetadata: true
-  embedsubtitles: true
-  writesubtitles: false       # keep only embedded subs (no extra .vtt/.srt)
+  embedsubtitles: false        # base: off (profiles may turn on)
+  writesubtitles: true         # base: download text subs
   writeautomaticsub: true
-  keep_subtitles: false       # delete .vtt/.srt after embedding
-  keep_thumbnail: false       # delete thumbnail file after embedding
-  # Choose one of the following lines:
-  subtitleslangs: ["en.*", "ru.*"]   # broad: accept dialects/auto variants
-  # subtitleslangs: ["en", "ru"]     # minimal: canonical tracks only
-  subtitlesformat: "vtt/srt"         # VTT fits WebM best; SRT may trigger MKV remux
+  subtitleslangs: ["en", "ru"] # keep only main langs to avoid en-en/en-orig
+  subtitlesformat: "vtt"       # profiles can request convert→srt
+  # convertsubtitles: "srt"    # only set in profiles that need it
 
-# Subdir templates (used by the wrapper; yt-dlp placeholders allowed)
+# Advanced
+advanced:
+  outtmpl_na_placeholder: "NA"
+
+# Subdirectory templates used by the wrapper (not yt-dlp)
 subdirs:
   per_item: "%(title).80s [%(id)s]"
   per_playlist: "%(playlist_title).80s [%(playlist_id)s]"
 
-# Advanced
-advanced:
-  # Placeholder used by yt-dlp when a field is missing in a template
-  outtmpl_na_placeholder: "NA"
-
-# Profiles (container/codec preferences)
+# Profiles tweak format/container and media handling
 profiles:
   webm:
     format: "bv*[ext=webm]+ba[ext=webm]/bv*+ba/best"
     merge_output_format: "webm"
     remuxvideo: "webm"
+    writethumbnail: true
+    embedthumbnail: true
+    embedsubtitles: true
+
   mp4:
     # prefer h264/aac for max compatibility
     format: "bv*[vcodec*=avc1]+ba[acodec*=mp4a]/bv*+ba/best"
     merge_output_format: "mp4"
     remuxvideo: "mp4"
+    writethumbnail: true
+    embedthumbnail: true
+    embedsubtitles: true
+
+  mkv:  # archival: embed everything, force SRT for best player support
+    format: "bv*+ba/best"
+    merge_output_format: "mkv"
+    remuxvideo: "mkv"
+
+    writesubtitles: true
+    embedsubtitles: true
+    subtitlesformat: "vtt/srt"     # download whatever exists
+    convertsubtitles: "srt"        # convert to SRT before embedding
+
+    writethumbnail: true
+    embedthumbnail: true
+
+    # Force exact post-processing steps
+    postprocessors:
+      - key: FFmpegSubtitlesConvertor
+        format: srt
+      - key: FFmpegEmbedSubtitle
+      - key: EmbedThumbnail
