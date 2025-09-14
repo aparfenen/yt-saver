@@ -1,10 +1,10 @@
 # Global defaults (safe & stable)
 save_dir: "./downloads"
 
-# Filename: date always, time if present, short safe title
+# Sortable, compact filenames: date + optional time + index + short safe title
 outtmpl: "%(upload_date>%Y-%m-%d)s%(release_timestamp>_%H-%M-%S|)s - %(autonumber)02d - %(title).100s.%(ext)s"
 
-# Common network/robustness
+# Network / robustness
 network:
   retries: 10
   fragment_retries: 10
@@ -13,11 +13,11 @@ network:
   socket_timeout: 30
   skip_unavailable_fragments: true
   sleep_requests: 0.75
-  sleep_subtitles: 5
   max_sleep_interval: 20
 
-# Common behavior
+# Behavior
 behavior:
+  # NOTE: We override this to False automatically when a playlist is detected
   noplaylist: true
   continuedl: true
   overwrites: false
@@ -28,19 +28,33 @@ behavior:
   no_abort_on_error: true
   download_archive: "yt-dlp-archive.txt"
 
-# Subtitles/metadata
+# Subtitles / metadata
 media:
   writeinfojson: true
   writethumbnail: true
-  embedthumbnail: true      # may remux WEBM -> MKV
+  embedthumbnail: true        # NOTE: WebM may remux to MKV to hold cover art
   addmetadata: true
   embedsubtitles: true
-  writesubtitles: false
+  writesubtitles: false       # keep only embedded subs (no extra .vtt/.srt)
   writeautomaticsub: true
-  subtitleslangs: ["en.*", "ru.*"]
-  subtitlesformat: "vtt/srt"
+  keep_subtitles: false       # delete .vtt/.srt after embedding
+  keep_thumbnail: false       # delete thumbnail file after embedding
+  # Choose one of the following lines:
+  subtitleslangs: ["en.*", "ru.*"]   # broad: accept dialects/auto variants
+  # subtitleslangs: ["en", "ru"]     # minimal: canonical tracks only
+  subtitlesformat: "vtt/srt"         # VTT fits WebM best; SRT may trigger MKV remux
 
-# Profiles tweak format/container
+# Subdir templates (used by the wrapper; yt-dlp placeholders allowed)
+subdirs:
+  per_item: "%(title).80s [%(id)s]"
+  per_playlist: "%(playlist_title).80s [%(playlist_id)s]"
+
+# Advanced
+advanced:
+  # Placeholder used by yt-dlp when a field is missing in a template
+  outtmpl_na_placeholder: "NA"
+
+# Profiles (container/codec preferences)
 profiles:
   webm:
     format: "bv*[ext=webm]+ba[ext=webm]/bv*+ba/best"
