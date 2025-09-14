@@ -4,7 +4,6 @@ from yt_dlp import YoutubeDL
 from yt_dlp.utils import YoutubeDLError
 import os
 
-
 def _pjoin(*parts: str) -> str:
     """
     Join path segments for yt-dlp's outtmpl.
@@ -14,7 +13,6 @@ def _pjoin(*parts: str) -> str:
     if not cleaned:
         return ""
     return os.path.join(*cleaned).replace("\\", "/")
-
 
 def _try_make_ydl(opts: Dict[str, Any]) -> YoutubeDL:
     """
@@ -41,7 +39,6 @@ def _try_make_ydl(opts: Dict[str, Any]) -> YoutubeDL:
         if changed:
             return YoutubeDL(clean)
         raise
-
 
 def download_batch(
     videos: Iterable[Tuple[str, str]],  # [(idx, url), ...]

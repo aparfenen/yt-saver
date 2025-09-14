@@ -1,18 +1,21 @@
-[project]
-name = "yt-saver"
-version = "0.1.0"
-description = "Opinionated yt-dlp wrapper: clean names, subs, metadata, anti-429, archives."
-authors = [{ name="Anna", email="ann.parfenen2018@gmail.com" }]
-readme = "README.md"
-requires-python = ">=3.9"
-dependencies = ["yt-dlp>=2025.1.0", "pyyaml>=6.0"]
-
-[project.scripts]
-ytsave = "yt_saver.cli:main"
-
 [build-system]
 requires = ["setuptools>=68", "wheel"]
 build-backend = "setuptools.build_meta"
 
+[project]
+name = "yt-saver"
+version = "0.1.0"
+description = "Opinionated yt-dlp wrapper (clean names, subs, metadata, anti-429, archives)."
+readme = "README.md"
+requires-python = ">=3.9"
+authors = [{ name = "Anna P", email = "" }]
+dependencies = [
+  "yt-dlp>=2025.1.0",
+  "PyYAML>=6.0",
+]
+
+[project.scripts]
+ytsave = "yt_saver.cli:main"
+
 [tool.setuptools.package-data]
-"yt_saver" = ["defaults.yaml"]
+yt_saver = ["defaults.yaml"]

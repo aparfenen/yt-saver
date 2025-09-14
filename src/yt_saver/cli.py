@@ -4,7 +4,6 @@ from pathlib import Path
 from yt_saver.config import Config
 from yt_saver.downloader import download_batch
 
-
 def parse_args():
     p = argparse.ArgumentParser(
         prog="ytsave",
@@ -46,7 +45,6 @@ def parse_args():
 
     return p.parse_args()
 
-
 def main():
     args = parse_args()
     cfg = Config.load(args.config)
@@ -82,7 +80,7 @@ def main():
         print("No URLs provided. Use positional URLs or --urls-file.", file=sys.stderr)
         sys.exit(2)
 
-    # Dry run shows the final yt-dlp opts (including cookies/impersonate) and templates
+    # Dry run: show final yt-dlp opts and templates
     if args.dry_run:
         from pprint import pprint
         pprint(opts)
@@ -90,15 +88,14 @@ def main():
         print(f"Sample outtmpl: {opts.get('outtmpl')}")
         sys.exit(0)
 
-    # Build iterable of (idx, url) for the downloader
+    # (idx, url) iterable
     vids = [(str(i), u) for i, u in enumerate(urls, start=args.start_index)]
 
-    # Per-item filename template (the file name part; subdirs applied in downloader)
+    # Filename template (file-part only; subdirs are applied in downloader)
     filename_tpl = args.template or "%(upload_date>%Y-%m-%d)s%(release_timestamp>_%H-%M-%S|)s - {idx} - %(title).100s.%(ext)s"
 
-    # Execute batch download with structured subdirectories
+    # Execute
     download_batch(vids, opts, filename_tpl=filename_tpl, subdirs=subdirs)
-
 
 if __name__ == "__main__":
     main()

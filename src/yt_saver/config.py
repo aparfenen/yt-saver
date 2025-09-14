@@ -36,13 +36,12 @@ class Config:
         os.makedirs(base_dir, exist_ok=True)
         opts["paths"] = {"home": base_dir}
 
-        # Filename template (the *file* part; subdir templates are added later)
+        # Filename template (file-part only; subdir templates added in downloader)
         outtmpl = outtmpl_override or d.get("outtmpl")
         if outtmpl:
-            # Only store the file template; downloader composes full path
             opts["outtmpl"] = os.path.join(base_dir, outtmpl)
 
-        # Behavior flags (archive path is relative to base_dir)
+        # Behavior flags (archive path relative to base_dir)
         for k, v in (d.get("behavior") or {}).items():
             if k == "download_archive":
                 v = os.path.join(base_dir, v)
@@ -56,19 +55,18 @@ class Config:
         for k, v in (d.get("media") or {}).items():
             opts[k] = v
 
-        # Profile-level overrides:
-        # 1) container/format preferences
+        # Profile-level overrides (container/format)
         for k in ("format", "merge_output_format", "remuxvideo"):
             v = prof.get(k)
             if v is not None:
                 opts[k] = v
 
-        # 2) media-related options that profiles may set/override
+        # Media-related keys a profile may override
         media_keys = (
             "writesubtitles", "writeautomaticsub", "embedsubtitles",
             "subtitleslangs", "subtitlesformat", "convertsubtitles",
             "writethumbnail", "embedthumbnail", "addmetadata", "writeinfojson",
-            "postprocessors",
+            "postprocessors", "postprocessor_args",
         )
         for k in media_keys:
             if k in prof:
@@ -90,7 +88,6 @@ class Config:
             "per_item": s.get("per_item", "%(title).80s [%(id)s]"),
             "per_playlist": s.get("per_playlist", "%(playlist_title).80s [%(playlist_id)s]"),
         }
-
 
 def _deep_merge(a: Dict[str, Any], b: Dict[str, Any]) -> Dict[str, Any]:
     """
