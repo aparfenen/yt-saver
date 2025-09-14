@@ -3,15 +3,17 @@ from typing import Iterable, Tuple, Dict, Any
 from yt_dlp import YoutubeDL
 import os
 
+
 def _pjoin(*parts: str) -> str:
     """
-    OS-safe join for outtmpl paths that may contain yt-dlp placeholders.
-    We normalize to forward slashes so yt-dlp treats it consistently on all OSes.
+    Join path segments for yt-dlp's outtmpl.
+    Always normalize to forward slashes so yt-dlp treats it consistently across OSes.
     """
     cleaned = [p for p in parts if p]
     if not cleaned:
         return ""
     return os.path.join(*cleaned).replace("\\", "/")
+
 
 def download_batch(
     videos: Iterable[Tuple[str, str]],  # [(idx, url), ...]
@@ -20,17 +22,21 @@ def download_batch(
     subdirs: Dict[str, str] | None = None,
 ) -> None:
     """
-    For single videos:
-      <save_dir>/<per_item>/<filename_tpl>
+    Output layout:
 
-    For playlists:
-      <save_dir>/<per_playlist>/<per_item>/<filename_tpl>
+      Single video:
+        <save_dir>/<per_item>/<filename_tpl>
+
+      Playlist:
+        <save_dir>/<per_playlist>/<per_item>/<filename_tpl>
 
     Notes:
-    - We probe metadata first (download=False) to decide whether the URL is a playlist.
-    - If it *is* a playlist, we forcibly enable playlist processing (override --no-playlist).
-    - {idx} in filename_tpl is replaced with the enumerated index from CLI, while
-      per-item numbering inside a playlist can still rely on %(autonumber) or %(playlist_index).
+    - We first probe metadata (download=False) to decide whether the URL is a playlist.
+    - For playlists we forcibly enable playlist processing (override --no-playlist).
+    - {idx} in filename_tpl:
+        * single URL → replaced with the enumerated CLI index (1, 2, 3, ...)
+        * playlist   → replaced with %(playlist_index)03d (001, 002, ...)
+    - Per-item numbering inside a playlist can also rely on %(autonumber) if desired.
     """
     subdirs = subdirs or {}
     per_item = subdirs.get("per_item", "%(title).80s [%(id)s]")
@@ -38,17 +44,25 @@ def download_batch(
 
     base_dir = (base_opts.get("paths") or {}).get("home") or "."
 
-    # Reuse a single YDL instance for the metadata probe
+    # Quiet probe to avoid duplicate loud logs during metadata detection
     probe_opts = dict(base_opts)
-    with YoutubeDL(probe_opts) as ydl:
+    probe_opts.update({
+        "quiet": True,
+        "no_warnings": True,
+        "verbose": False,
+    })
+
+    with YoutubeDL(probe_opts) as ydl_probe:
         for idx, url in videos:
+            # Copy base opts for the actual download
             opts = dict(base_opts)
 
-            # Probe to detect playlist vs single video; fall back to single on probe errors
+            # Detect playlist vs single video
             try:
-                info = ydl.extract_info(url, download=False)
+                info = ydl_probe.extract_info(url, download=False)
                 is_playlist = (info.get("_type") == "playlist")
             except Exception:
+                # On probe errors assume single video to keep going
                 is_playlist = False
 
             # Build directory template
@@ -59,12 +73,17 @@ def download_batch(
             else:
                 root = _pjoin(base_dir, per_item)
 
-            # Final filename template (inject {idx} if provided)
-            item_filename = (filename_tpl or "%(upload_date>%Y-%m-%d)s - %(title).100s.%(ext)s").replace("{idx}", str(idx))
+            # Choose filename template and inject index
+            raw_tpl = filename_tpl or "%(upload_date>%Y-%m-%d)s - %(title).100s.%(ext)s"
+            if is_playlist:
+                # Per-item index inside the playlist (001, 002, ...)
+                item_filename = raw_tpl.replace("{idx}", "%(playlist_index)03d")
+            else:
+                item_filename = raw_tpl.replace("{idx}", str(idx))
 
             # Compose final outtmpl (directories + file template)
             opts["outtmpl"] = _pjoin(root, item_filename)
 
-            # Execute download with per-item template
-            with YoutubeDL(opts) as dly:
-                dly.download([url])
+            # Execute download with the per-item template
+            with YoutubeDL(opts) as ydl:
+                ydl.download([url])
