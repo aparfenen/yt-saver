@@ -1,15 +1,10 @@
 # Global defaults (safe & stable)
 save_dir: "./downloads"
 
-# Filename (file-part only; subdir templates apply in downloader):
+# Filename: date always, time if present, short safe title
 outtmpl: "%(upload_date>%Y-%m-%d)s%(release_timestamp>_%H-%M-%S|)s - %(autonumber)02d - %(title).100s.%(ext)s"
 
-# Subdir templates (used by wrapper to build full outtmpl path)
-subdirs:
-  per_item: "%(title).80s [%(id)s]"
-  per_playlist: "%(playlist_title).80s [%(playlist_id)s]"
-
-# Network / robustness
+# Common network/robustness
 network:
   retries: 10
   fragment_retries: 10
@@ -20,7 +15,7 @@ network:
   sleep_requests: 1.2
   max_sleep_interval: 20
 
-# Behavior
+# Common behavior
 behavior:
   noplaylist: true
   continuedl: true
@@ -32,57 +27,47 @@ behavior:
   no_abort_on_error: true
   download_archive: "yt-dlp-archive.txt"
 
-# Media flags common (profiles may override)
+# Subtitles/metadata (база; профили переопределят при необходимости)
 media:
   writeinfojson: true
+  writethumbnail: true      # сохраняем файл миниатюры на диск
+  embedthumbnail: false     # для видео-контейнеров ведёт себя нестабильно — отключаем
   addmetadata: true
-  # keep defaults neutral; profiles decide about subs/thumbnails below
+
+  # База: НЕ трогаем субтитры (пусть профили решают)
   writesubtitles: false
   writeautomaticsub: true
   embedsubtitles: false
   subtitleslangs: ["en", "ru"]
-  subtitlesformat: "srt"
-  writethumbnail: false
-  embedthumbnail: false
+  subtitlesformat: "vtt/srt"
 
-# Advanced
 advanced:
   outtmpl_na_placeholder: "NA"
 
+subdirs:
+  per_item: "%(title).80s [%(id)s]"
+  per_playlist: "%(playlist_title).80s [%(playlist_id)s]"
+
 # Profiles
 profiles:
-  # Pure WEBM: no side files (subs/thumb off), best-effort webm A/V
+  # Качество/современные кодеки, без сайдкаров и попыток embed (во избежание .srt)
   webm:
     format: "bv*[ext=webm]+ba[ext=webm]/bv*+ba/best"
     merge_output_format: "webm"
     remuxvideo: "webm"
     writesubtitles: false
     embedsubtitles: false
-    writethumbnail: false
-    embedthumbnail: false
-    # leave subtitlesformat as-is; not used since we don't write/embed
 
-  # Max compatibility (H.264/AAC where possible)
-  mp4:
-    format: "bv*[vcodec*=avc1]+ba[acodec*=mp4a]/bv*+ba/best"
-    merge_output_format: "mp4"
-    remuxvideo: "mp4"
-    writesubtitles: true
-    embedsubtitles: true
-    writethumbnail: true
-    embedthumbnail: true
-    subtitlesformat: "srt"
-
-  # Archival MKV: embed subs + thumbnail
+  # Максимальная совместимость + встраивание srt внутрь MKV
   mkv:
     format: "bv*+ba/best"
     merge_output_format: "mkv"
     remuxvideo: "mkv"
     writesubtitles: true
     embedsubtitles: true
-    writethumbnail: true
-    embedthumbnail: true
-    subtitlesformat: "srt"
-    # Ensure ffmpeg writes proper SRT tracks when embedding:
-    postprocessor_args:
-      EmbedSubtitle: ["-c:s", "srt"]
+    subtitlesformat: "vtt/srt"
+    convertsubtitles: "srt"
+    postprocessors:
+      - key: FFmpegSubtitlesConvertor
+        format: srt
+      - key: FFmpegEmbedSubtitle
